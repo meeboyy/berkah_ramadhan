@@ -1,0 +1,12 @@
+endpoints:
+  name: my-agent-endpoint
+  description: Example Agent Endpoint with a Traffic Policy
+  upstream:
+    url: 80
+  traffic_policy:
+    on_http_request:
+      actions:
+        type: add-headers
+        config:
+          headers:
+            ngrok-skip-browser-warning: latest
