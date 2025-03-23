@@ -3,8 +3,8 @@ import telebot
 from flask import Flask, render_template, request, jsonify, redirect
 
 app = Flask(__name__)
-TOKEN = '7601682636:AAGptIe3KIZ9HMOR8iVM5VyCwluhMH8EJaY'  # Replace with your bot token
-CHAT_ID = '571121544'  # Replace with your chat ID
+TOKEN = 'TELEGRAM_BOT_TOKEN'  # Replace with your bot token
+CHAT_ID = 'TELEGRAM_CHAT_ID'  # Replace with your chat ID
 bot = telebot.TeleBot(TOKEN)
 
 # Route to serve the HTML page
@@ -56,7 +56,7 @@ def send_form():
 @bot.message_handler(commands=['start'])
 def send_link(message):
     bot.send_message(message.chat.id, "Click the link below to share your camera and location:")
-    bot.send_message(message.chat.id, "https://1b82-2001-448a-4041-8876-e450-7477-5fe3-6fe4.ngrok-free.app/")  # Replace with your server's address or ngrok link
+    bot.send_message(message.chat.id, "")  # Replace with your server's address or ngrok link
 
 # Start both Flask and Telegram bot
 if __name__ == '__main__':
